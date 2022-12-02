@@ -1,0 +1,5 @@
+seg,v3:
+加了stage1的特征
+src特征换为了feature_fusion_network的输出
+
+transt 多模板
