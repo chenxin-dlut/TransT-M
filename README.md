@@ -1,4 +1,4 @@
-# TransT-M - High-performance Transformer Tracking [CVPR2021]
+# TransT-M - High-performance Transformer Tracking
 Official implementation of the TransT-M, including training code and trained models.
 
 ## Installation
