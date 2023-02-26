@@ -9,14 +9,12 @@ from ltr import actors
 from ltr.trainers.transt_trainer import TransTLTRTrainer
 import ltr.data.transforms as tfm
 
-import os
-# os.environ["CUDA_VISIBLE_DEVICES"]= "0, 1"
 
 
 def run(settings):
     # Most common settings are assigned in the settings struct
     settings.description = 'TransT with default settings.'
-    settings.batch_size = 128
+    settings.batch_size = 14
     settings.num_workers = 4
     settings.print_interval = 1
     settings.normalize_mean = [0.485, 0.456, 0.406]
@@ -42,14 +40,13 @@ def run(settings):
     settings.featurefusion_layers = 4
 
     # IOU head
-    settings.iou_head = True
+    settings.iou_head = False
     # Segmentation
     settings.masks = False
 
     # pretrained_transt
-    settings.freeze_transt = True
-    settings.transt_path = '/home/cx/cx1/TransT_experiments/models/N4_mt_2tp/TransT_ep0464.pth.tar'
-    # settings.transt_path = None
+    settings.freeze_transt = False
+    settings.transt_path = None
 
     # Train datasets
     # -bbox
@@ -70,15 +67,6 @@ def run(settings):
                                     tfm.Normalize(mean=settings.normalize_mean, std=settings.normalize_std))
 
     # Data processing to do on the training pairs
-    # data_processing_train = processing.TransTProcessing(search_area_factor=settings.search_area_factor,
-    #                                                   template_area_factor = settings.template_area_factor,
-    #                                                   search_sz=settings.search_sz,
-    #                                                   temp_sz=settings.temp_sz,
-    #                                                   center_jitter_factor=settings.center_jitter_factor,
-    #                                                   scale_jitter_factor=settings.scale_jitter_factor,
-    #                                                   mode='sequence',
-    #                                                   transform=transform_train,
-    #                                                   joint_transform=transform_joint)
     data_processing_train = processing.TransTMaskProcessing(search_area_factor=settings.search_area_factor,
                                                             template_area_factor = settings.template_area_factor,
                                                             search_sz=settings.search_sz,
@@ -90,11 +78,9 @@ def run(settings):
                                                             joint_transform=transform_joint)
 
     # The sampler for training
-    # dataset_train = sampler.TransTMaskSampler([youtube_vos,saliency], [2,3],
-    #                             samples_per_epoch=200*settings.batch_size, max_gap=100, processing=data_processing_train)
     dataset_train = sampler.TransTMaskSampler([lasot_train, got10k_train, coco_train, trackingnet_train], [1,1,1,1],
                                               num_search_frames=1, num_template_frames=2,
-                                              samples_per_epoch=2*200*settings.batch_size, max_gap=100,
+                                              samples_per_epoch=80000, max_gap=100,
                                               processing=data_processing_train,
                                               frame_sample_mode='transt')
 
@@ -127,12 +113,12 @@ def run(settings):
             "lr": 1e-5,
         },
     ]
-    optimizer = torch.optim.AdamW(param_dicts, lr=1e-3,
+    optimizer = torch.optim.AdamW(param_dicts, lr=1e-4,
                                   weight_decay=1e-4)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 30)
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 400)
 
     # Create trainer
     trainer = TransTLTRTrainer(actor, [loader_train], optimizer, settings, lr_scheduler)
 
     # Run training (set fail_safe=False if you are debugging)
-    trainer.train(90, transt_path=settings.transt_path, load_latest=True, fail_safe=True)
+    trainer.train(500, transt_path=settings.transt_path, load_latest=True, fail_safe=True)

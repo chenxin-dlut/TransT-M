@@ -12,14 +12,13 @@ import time
 class Tracker(object):
 
     def __init__(self, name, net, mask, window_penalty=0.49, penalty_k=0,
-                 iou_alpha = 0, update_threshold=0.9, mask_threshold=0.5,
+                 update_threshold=0.9, mask_threshold=0.5,
                  exemplar_size=128, instance_size=256):
         self.name = name
         self.net = net
         self.num_template = 2
         self.window_penalty = window_penalty
         self.penalty_k = penalty_k
-        self.iou_alpha = iou_alpha
         self.mask_threshold = mask_threshold
         self.update_threshold = update_threshold
         self.exemplar_size = exemplar_size
@@ -268,7 +267,6 @@ class Tracker(object):
         # pscore = penalty * score
 
         pscore = score
-        # pscore = (pscore ** (1-self.iou_alpha)) * (iou ** (self.iou_alpha))
         # window penalty
         pscore = pscore * (1 - self.window_penalty) + \
                  self.window * self.window_penalty

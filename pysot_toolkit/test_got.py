@@ -5,7 +5,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]= "1"
 import sys
 env_path = os.path.join(os.path.dirname(__file__), '..')
 print(env_path)
@@ -23,7 +22,7 @@ from pysot_toolkit.toolkit.utils.region import vot_overlap, vot_float2str
 from pysot_toolkit.trackers.tracker import Tracker
 from pysot_toolkit.trackers.net_wrappers import NetWithBackbone
 
-parser = argparse.ArgumentParser(description='siamrpn tracking')
+parser = argparse.ArgumentParser(description='transt_m tracking')
 parser.add_argument('--dataset', type=str,
         help='datasets')
 parser.add_argument('--video', default='', type=str,
@@ -43,21 +42,16 @@ torch.set_num_threads(1)
 def main():
     # load config
 
-    # dataset_root = '/home/cx/toolkit/got10k/datasets/test'
-    # dataset_root = '/home/cx/detr-tracking-v6/testing_dataset/VOT2019'
-    # dataset_root = '/home/cx/cx2/LaSOTBenchmark'
-    dataset_root = '/home/cx/cx2/TrackingNet/TEST/frames'
-    # dataset_root = '/home/cx/cx2/OTB100'
-    # dataset_root = '/home/cx/cx2/Downloads/nfs'
-    # dataset_root = '/home/cx/cx2/Downloads/UAV123/UAV123_fix/Dataset_UAV123/UAV123/data_seq/UAV123'
-    net_path = '/home/cx/cx1/work_dir/work_dir_mt_2t_e464_iouh_seg/checkpoints/ltr/transt/transt_iouh_seg_ddp/TransTiouhsegm_ep0090.pth.tar'
-    # net_path = '/home/cx/TransT/models/transt.pth'
+    dataset_root = '/home/cx/toolkit/got10k/datasets/test' #path to got10k
+    net_path = '/home/cx/cx1/TransT_experiments/TransT-M/models/transtm.pth' #path to transtm model
+
 
     # create model
     net = NetWithBackbone(net_path=net_path, use_gpu=True)
-    tracker = Tracker(name='e464e90e90w58a0ut89', net=net, mask=args.mask,
-                      window_penalty=0.58, penalty_k=0, iou_alpha=0,
+    tracker = Tracker(name='transt-m', net=net, mask=args.mask,
+                      window_penalty=0.43, penalty_k=0,
                       update_threshold=0.89, exemplar_size=128, instance_size=256)
+
     # create dataset
     dataset = DatasetFactory.create_dataset(name=args.dataset,
                                             dataset_root=dataset_root,

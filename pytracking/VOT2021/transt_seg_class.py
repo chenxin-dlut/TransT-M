@@ -11,28 +11,21 @@ import cv2
 import torch
 import torch.nn.functional as F
 import time
-'''Refine module & Pytracking base trackers'''
-# from common_path import *
 import os
-'''2020.4.24 Use new pytracking library(New DiMP)'''
-from pytracking.evaluation import Tracker
-'''2020.4.15 ARcm_seg model'''
-'''other utils'''
 from pytracking.vot20_utils import *
 from pysot_toolkit.trackers.net_wrappers import NetWithBackbone
 import pytracking.evaluation.vot2020 as vot
 ''''''
 class TRANST_SEG(object):
 
-    def __init__(self, name, net, mask, window_penalty=0.49, penalty_k=0,
-                 iou_alpha=0, update_threshold=0.9, mask_threshold=0.5,
+    def __init__(self, name, net, mask=True, window_penalty=0.47, penalty_k=0.246,
+                 update_threshold=0.876, mask_threshold=0.5,
                  exemplar_size=128, instance_size=256):
         self.name = name
         self.net = net
         self.num_template = 2
         self.window_penalty = window_penalty
         self.penalty_k = penalty_k
-        self.iou_alpha = iou_alpha
         self.mask_threshold = mask_threshold
         self.update_threshold = update_threshold
         self.exemplar_size = exemplar_size
@@ -268,24 +261,8 @@ class TRANST_SEG(object):
         score = self._convert_score(outputs['pred_logits'])
         pred_bbox = self._convert_bbox(outputs['pred_boxes'])
         iou = self._convert_iou(outputs['pred_iouh'])
-        def change(r):
-            return np.maximum(r, 1. / r)
 
-        def sz(w, h):
-            pad = (w + h) * 0.5
-            return np.sqrt((w + pad) * (h + pad))
-
-        # scale penalty
-        s_c = change(sz(pred_bbox[2, :], pred_bbox[3, :]) /
-                     (sz(self.size[0]/s_x, self.size[1]/s_x)))
-
-        # aspect ratio penalty
-        r_c = change((self.size[0]/self.size[1]) /
-                     (pred_bbox[2, :]/pred_bbox[3, :]))
-        penalty = np.exp(-(r_c * s_c - 1) * self.penalty_k)
-        pscore = penalty * score
-
-        # pscore = score
+        pscore = score
         # window penalty
         pscore = pscore * (1 - self.window_penalty) + \
                  self.window * self.window_penalty
@@ -361,7 +338,7 @@ class TRANST_SEG(object):
 
 def run_vot_exp(name, mask, window, penalty_k, update_threshold, mask_threshold, net_path, save_root, VIS=False):
 
-    torch.set_num_threads(1)
+    # torch.set_num_threads(1)
     # torch.cuda.set_device(CUDA_ID)  # set GPU id
     if VIS and (not os.path.exists(save_root)):
         os.mkdir(save_root)

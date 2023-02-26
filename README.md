@@ -30,7 +30,7 @@ Create the default environment setting files.
 
 ```bash
 # Change directory to <PATH_of_TransT>
-cd TransT
+cd TransT-M
 
 # Environment settings for pytracking. Saved at pytracking/evaluation/local.py
 python -c "from pytracking.evaluation.environment import create_default_local_file; create_default_local_file()"
@@ -45,59 +45,70 @@ Open ~/.bashrc, and add the following line to the end. Note to change <path_of_T
 export PYTHONPATH=<path_of_TransT>:$PYTHONPATH
 ```
 * Download the pre-trained networks 
-Download the network for [TransT](https://drive.google.com/file/d/1Pq0sK-9jmbLAVtgB9-dPDc2pipCxYdM5/view?usp=sharing)
+Download the network for [TransT-M](https://drive.google.com/drive/folders/1-DtTGZE1Q7MAWX9ufv_xif1SCA_zQE0)
 and put it in the directory set by "network_path" in "pytracking/evaluation/local.py". By default, it is set to 
 pytracking/networks.
 
 ## Quick Start
 #### TRAINING
 * Modify [local.py](ltr/admin/local.py) to set the paths to datasets, results paths etc.
-* Runing the following commands to train the TransT. You can customize some parameters by modifying [transt.py](ltr/train_settings/transt/transt_dp.py)
+* Runing the following commands to train the TransT-M. You can customize some parameters by modifying the settings in [transt](ltr/train_settings/transt/)
+1. Train the base model of TransT-M
 ```bash
 conda activate transt
-cd TransT/ltr
-python run_training.py transt transt
+cd TransT-M/ltr
+python -m torch.distributed.launch --nproc_per_node 8 run_training_multigpu.py transt transt
+```  
+2. Train the iou head of TransT-M, you should set a new workspace_dir in [local.py](ltr/admin/local.py) and modify the settings.transt_path in [transt_iou.py](ltr/train_settings/transt/transt_iou.py) to the path of a trained base transt model
+```bash
+python -m torch.distributed.launch --nproc_per_node 8 run_training_multigpu.py transt transt_iou
 ```  
 
+3. Train the segmentation branch of TransT-M, you should set a new workspace_dir in [local.py](ltr/admin/local.py) and modify the settings.transt_path in [transt_iou_seg.py](ltr/train_settings/transt/transt_iou_seg.py) to the path of a trained transt_iou model
+```bash
+python -m torch.distributed.launch --nproc_per_node 8 run_training_multigpu.py transt transt_iou_seg
+```  
 #### Evaluation
-* We integrated [GOT-10k Python Toolkit](https://github.com/got-10k/toolkit) to eval on [GOT-10k](http://got-10k.aitestunion.com/), [OTB (2013/2015)](http://cvlab.hanyang.ac.kr/tracker_benchmark/index.html), [VOT (2013~2018)](http://votchallenge.net), [DTB70](https://github.com/flyers/drone-tracking), [TColor128](http://www.dabi.temple.edu/~hbling/data/TColor-128/TColor-128.html), [NfS (30/240 fps)](http://ci2cv.net/nfs/index.html), [UAV (123/20L)](https://ivul.kaust.edu.sa/Pages/pub-benchmark-simulator-uav.aspx), [LaSOT](https://cis.temple.edu/lasot/) and [TrackingNet](https://tracking-net.org/) benchmarks. 
-Please refer to [got10k_toolkit](/got10k_toolkit) for details.
-For convenience, We provide some python files to test and eval on the corresponding benchmarks. For example [test_got.py](got10k_toolkit/toolkit/test_got.py) and [evaluate_got.py](got10k_toolkit/toolkit/evaluate_got.py). 
-
-    You need to specify the path of the model and dataset in the these files, and run them to evaluation.
+* We integrated [PySOT](https://github.com/STVIR/pysot) for evaluation
+    You need to specify the path of the model and dataset in the following files: [test_got.py](pysot_toolkit/test_got.py), [test_lasot.py](pysot_toolkit/test_lasot.py), [test_nfs.py](pysot_toolkit/test_nfs.py), [test_otb.py](pysot_toolkit/test_otb.py), [test_tracking.py](pysot_toolkit/test_tracking.py), [test_uav.py](pysot_toolkit/test_uav.py)
     ```python
     net_path = '/path_to_model' #Absolute path of the model
     dataset_root= '/path_to_datasets' #Absolute path of the datasets
     ```  
-
-    Then run the following commands
-
-    ```bash
-    conda activate TransT
-    cd TransT
-    python got10k_toolkit/toolkit/test_got.py #test tracker
-    python got10k_toolkit/toolkit/evaluate_got.py #eval tracker
-    ```  
-
-* We also integrated [PySOT](https://github.com/STVIR/pysot), You can use it to eval on [VOT2019](http://votchallenge.net). 
-    
-    You need to specify the path of the model and dataset in the [test.py](pysot_toolkit/test.py)
+    You need to specify the path of dataset in [eval.py](pysot_toolkit/eval.py)
     ```python
-    net_path = '/path_to_model' #Absolute path of the model
-    dataset_root= '/path_to_datasets' #Absolute path of the datasets
+    root = '/path_to_datasets' #Absolute path of the datasets
     ```  
+
     Then run the following commands
     ```bash
     conda activate TransT
-    cd TransT
-    python -u pysot_toolkit/test.py --dataset VOT2019 #test tracker #test tracker
-    python pysot_toolkit/eval.py --tracker_path pysot_toolkit/results/ --dataset VOT2019 --num 1 #eval tracker
+    cd TransT-M
+    python -u pysot_toolkit/test_lasot.py --dataset LaSOT #test tracker
+    python pysot_toolkit/eval.py --tracker_path pysot_toolkit/results/ --dataset LaSOT --num 1 #eval tracker
+
+    python -u pysot_toolkit/test_got.py --dataset GOT-10k #test tracker
+
+    python -u pysot_toolkit/test_trackingnet.py --dataset Tracking #test tracker
+  
+    python -u pysot_toolkit/test_nfs.py --dataset NFS #test tracker
+    python pysot_toolkit/eval.py --tracker_path pysot_toolkit/results/ --dataset NFS --num 1 #eval tracker
+
+    python -u pysot_toolkit/test_uav.py --dataset UAV #test tracker
+    python pysot_toolkit/eval.py --tracker_path pysot_toolkit/results/ --dataset UAV --num 1 #eval tracker
+
+    python -u pysot_toolkit/test_otb.py --dataset OTB #test tracker
+    python pysot_toolkit/eval.py --tracker_path pysot_toolkit/results/ --dataset OTB --num 1 #eval tracker
     ```  
-* You can also use [pytracking](pytracking) to test and evaluate tracker. 
-But we have not carefully tested it, the results might be slightly different with the two methods above due to the slight difference in implementation.
-##Acknowledgement
+* For evaluation on VOT2021, run the following commands. You should modify the paths in [trackers.ini](vot2021_workspace%2Ftrackers.ini), and the net path in [transt_VOT2021.py](pytracking%2FVOT2021%2Ftranst_VOT2021.py)
+    ```bash
+    cd TransT-M/vot2021_workspace
+    vot evaluate TransT_M
+    ``` 
+
+## Acknowledgement
 This is a modified version of the python framework [PyTracking](https://github.com/visionml/pytracking) based on **Pytorch**, 
 also borrowing from [PySOT](https://github.com/STVIR/pysot) and [GOT-10k Python Toolkit](https://github.com/got-10k/toolkit). 
 We would like to thank their authors for providing great frameworks and toolkits.
-##Contact
+## Contact
 * Xin Chen (email:chenxin3131@mail.dlut.edu.cn)
