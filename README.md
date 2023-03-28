@@ -1,5 +1,6 @@
 # TransT-M - High-performance Transformer Tracking
 Official implementation of the TransT-M, including training code and trained models.
+[Models](https://drive.google.com/drive/folders/1-DtTGZE1Q7MAWX9ufv_xif1SCA_zQE0H?usp=sharing)
 
 ## Installation
 This document contains detailed instructions for installing the necessary dependencied for **TransT-M**. The instructions 
@@ -45,7 +46,7 @@ Open ~/.bashrc, and add the following line to the end. Note to change <path_of_T
 export PYTHONPATH=<path_of_TransT>:$PYTHONPATH
 ```
 * Download the pre-trained networks 
-Download the network for [TransT-M](https://drive.google.com/drive/folders/1-DtTGZE1Q7MAWX9ufv_xif1SCA_zQE0)
+Download the network for [TransT-M](https://drive.google.com/drive/folders/1-DtTGZE1Q7MAWX9ufv_xif1SCA_zQE0H?usp=sharing)
 and put it in the directory set by "network_path" in "pytracking/evaluation/local.py". By default, it is set to 
 pytracking/networks.
 
